@@ -1,10 +1,9 @@
 var express = require('express');
 var router = express.Router();
-const sql = require('mssql');
 var createError = require('http-errors');
 var express = require('express');
 var router = express.Router();
-
+const sql = require('mssql');
 
 const config = {
   user: '4DD_19',  //Vostro user name
@@ -14,7 +13,7 @@ const config = {
 }
 
 //Function to connect to database and execute query
-let executeQuery = function (res, query, next) {
+let executeQuery = function (res, query, next, sendData) {
   sql.connect(config, function (err) {
     if (err) { //Display error page
       console.log("Error while connecting database :- " + err);
@@ -29,22 +28,22 @@ let executeQuery = function (res, query, next) {
         sql.close();
         return;
       }
-      res.send(result.recordset); //Il vettore con i dati è nel campo recordset (puoi loggare result per verificare)
+      if(sendData) res.send(result.recordset); //Il vettore con i dati è nel campo recordset (puoi loggare result per verificare)
       sql.close();
     });
 
   });
 }
 
-/* GET LISTA. */
+/* GET users listing. */
 router.get('/', function (req, res, next) {
   let sqlQuery = "select * from dbo.[cr-unit-attributes]";
-  executeQuery(res, sqlQuery, next);
+  executeQuery(res, sqlQuery, next, true);
 });
 
 router.get('/search/:name', function (req, res, next) {
   let sqlQuery = `select * from dbo.[cr-unit-attributes] where Unit = '${req.params.name}'`;
-  executeQuery(res, sqlQuery, next);
+  executeQuery(res, sqlQuery, next, true);
 });
 
 router.post('/', function (req, res, next) {
@@ -56,9 +55,12 @@ router.post('/', function (req, res, next) {
   }
   let sqlInsert = `INSERT INTO dbo.[cr-unit-attributes] (Unit,Cost,Hit_Speed) 
                      VALUES ('${unit.Unit}','${unit.Cost}','${unit.Hit_Speed}')`;
-  executeQuery(res, sqlInsert, next);
-  res.send({success:true, message: "unità inserita con successo", unit: unit})
+  executeQuery(res, sqlInsert, next, false);
+  
+  let unita = [];
+  unita.push(unit);
+  res.render("unit",{unita : unita})
+  //res.send({success:true, message: "unità inserita con successo", unit: unit})
 });
-
 
 module.exports = router;
